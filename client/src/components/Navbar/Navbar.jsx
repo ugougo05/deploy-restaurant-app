@@ -19,33 +19,33 @@ function Navbar() {
         {isLoggedIn && (
           <>
             {isAdmin && (<Link to="/items">
-              <button className="button-menu"> <BiListUl className="icons" /> Items</button>
+              <button className="button-menu"> <BiListUl className="icons" />Items</button>
             </Link>)}
             {isAdmin && (<Link to="/createitem">
               <button className="button-menu"><BiListPlus className="icons" />Create Item</button>
             </Link>)}
             {isAdmin && (<Link to="/discounts/coupons">
-              <button className="button-menu"><BiSolidDiscount className="icons" />Cupões</button>
+              <button className="button-menu"><BiSolidDiscount className="icons" />Coupons</button>
             </Link>)}
             {isAdmin && (<Link to="/createcoupon">
               <button className="button-menu"><BiListPlus className="icons" />Create Coupon</button>
             </Link>)}
             {isAdmin && (<Link to="/discounts/campaigns">
-              <button className="button-menu"><MdCampaign className="icons" />Campanhas</button>
+              <button className="button-menu"><MdCampaign className="icons" />Campaigns</button>
             </Link>)}
             {isAdmin && (<Link to="/createcampaign">
-              <button className="button-menu"><BiListPlus className="icons" />Create Campanhas</button>
+              <button className="button-menu"><BiListPlus className="icons" />Create Campaigns</button>
             </Link>)}
             {isAdmin && (<Link to="/dietary">
-              <button className="button-menu"><BiSolidCategoryAlt className="icons" />Categorias</button>
+              <button className="button-menu"><BiSolidCategoryAlt className="icons" />Categories</button>
             </Link>)}
             {isAdmin && (<Link to="/createdietary">
-              <button className="button-menu"><BiListPlus className="icons" />Create Categorias</button>
+              <button className="button-menu"><BiListPlus className="icons" />Create Categories</button>
             </Link>)}
             <Link to="/profile">
-              <button className="button-menu"><BsFillPersonFill className="icons" />Perfil</button>
+              <button className="button-menu"><BsFillPersonFill className="icons" />Profile</button>
             </Link>
-            <button onClick={logOutUser} className="button-menu"> <BiLogOut className="icons" /> Sair</button>
+            <button onClick={logOutUser} className="button-menu"> <BiLogOut className="icons" />Exit</button>
           </>
         )
         }
