@@ -14,7 +14,7 @@ function Navbar() {
     <nav className="navbar">
 
       <Link to="/"><img src={"./logo.png"} width={"250px"}></img></Link>
-      {user ? (<h3>Bem-vindo {user.name} {user.surname}</h3>) : (<h3>Bem-vindo</h3>)}
+      {user ? (<h3>Welcome {user.name} {user.surname}</h3>) : (<h3>Welcome</h3>)}
       <div className="buttons-main">
         {isLoggedIn && (
           <>
@@ -57,7 +57,7 @@ function Navbar() {
               <button className="button-menu">Login</button>
             </Link>
             <Link to="/signup">
-              <button className="button-menu">Registar</button>
+              <button className="button-menu">Register</button>
             </Link>
           </>
         )
