@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restaurant_auth
+  template:
+    metadata:
+      labels:
+        app: restaurant_auth
+    spec:
+      containers:
+        - name: restaurant_auth
+          image: ugougo05/auth:latest
+          ports:
+            - containerPort: 3001
+          env:
+            - name: SECRET
+              value: "${{ secrets.SECRET }}"
+            - name: MONGODB_URI
+              value: "${{ secrets.MONGODB_URI }}"
+            - name: CLOUD_NAME
+              value: "${{ secrets.CLOUD_NAME }}"
+            - name: CLOUD_API_KEY
+              value: "${{ secrets.CLOUD_API_KEY }}"
+            - name: CLOUD_API_SECRET
+              value: "${{ secrets.CLOUD_API_SECRET }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+spec:
+  selector:
+    app: restaurant_auth
+  ports:
+    - port: 3001
+      targetPort: 3001

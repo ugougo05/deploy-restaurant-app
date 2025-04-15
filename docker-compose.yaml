@@ -1,0 +1,100 @@
+
+
+services:
+  restaurant_auth:
+    build:
+      context: ./backend/auth
+    container_name: restaurant_auth
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./backend/auth/.env
+    environment:
+      # Override (or set) the MongoDB connection string to use the "db" service
+      - MONGO_URI=mongodb://mongodb:27017/auth_db
+    depends_on:
+      - mongodb
+    networks:
+      - restauranty-network
+
+
+  restaurant_discounts:
+    build:
+      context: ./backend/discounts
+    container_name: restaurant_discounts
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./backend/discounts/.env
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/discounts_db
+    depends_on:
+      - mongodb
+    networks:
+      - restauranty-network
+
+
+  restaurant_items:
+    build:
+      context: ./backend/items
+    container_name: restaurant_items
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./backend/items/.env
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/items_db
+    depends_on:
+      - mongodb
+    networks:
+    - restauranty-network
+
+  restaurant_client:
+    build:
+      context: ./client
+    container_name: restaurant_client
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./client/.env
+    depends_on:
+      - restaurant_auth
+      - restaurant_discounts
+      - restaurant_items
+    networks:
+      - restauranty-network
+
+
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - restauranty-network
+
+  haproxy:
+    image: haproxy:latest
+    container_name: restaurant_haproxy
+    ports:
+      - "80:80"
+    volumes:
+      # Mount your local haproxy.cfg into the container (read-only)
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - restaurant_auth
+      - restaurant_discounts
+      - restaurant_items
+      - restaurant_client
+    networks:
+      - restauranty-network
+
+networks:
+  restauranty-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+
