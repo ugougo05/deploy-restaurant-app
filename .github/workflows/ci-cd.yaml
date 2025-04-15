@@ -64,7 +64,8 @@ jobs:
 
       - name: Configure AKS Credentials
         uses: azure/login@v1
-        with:
+        with: 
+          auth-type: spn
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           client-secret: ${{ secrets.AZURE_SECRET }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
