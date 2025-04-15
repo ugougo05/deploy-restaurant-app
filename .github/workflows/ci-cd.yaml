@@ -13,8 +13,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write    # This allows the GitHub Action to request an ID token.
-      contents: read     # This is usually needed for accessing the repository.
+       contents: read     # This is usually needed for accessing the repository.
     env:
       IMAGE_TAG: ${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || github.sha }}
     steps:
