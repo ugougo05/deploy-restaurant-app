@@ -63,7 +63,7 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/client:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/client:latest
 
-      - name: Azure Login
+      - name: Configure AKS Credentials
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
