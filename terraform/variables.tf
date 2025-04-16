@@ -13,7 +13,7 @@ variable "location" {
 variable "aks_cluster_name" {
   type        = string
   description = "AKS Cluster name"
-  default     = "ugo-restauranty-rg"
+  default     = "ugo-restauranty-cluster"
 }
 
 variable "agent_count" {
