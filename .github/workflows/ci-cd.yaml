@@ -1,5 +1,5 @@
-name: CI / CD Pipeline
-run-name: ${{ github.actor }} is Deploying 
+name: CI/CD Pipeline
+run-name: ${{ github.actor }} is Deploying
 
 on:
   push:
@@ -13,10 +13,12 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-       contents: read     # This is usually needed for accessing the repository.
+      id-token: write
+      contents: read
     env:
       IMAGE_TAG: ${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || github.sha }}
     steps:
+  
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -26,7 +28,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push auth
+      - name: Build and push auth service
         uses: docker/build-push-action@v6
         with:
           context: ./backend/auth
@@ -34,8 +36,14 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/auth:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/auth:latest
-            
-      - name: Build and push discounts
+          build-args: |
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            SECRET=${{ secrets.SECRET }}
+            CLOUD_NAME=${{ secrets.CLOUD_NAME }}
+            CLOUD_API_KEY=${{ secrets.CLOUD_API_KEY }}
+            CLOUD_API_SECRET=${{ secrets.CLOUD_API_SECRET }}
+
+      - name: Build and push discounts service
         uses: docker/build-push-action@v6
         with:
           context: ./backend/discounts
@@ -43,8 +51,14 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/discounts:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/discounts:latest
+          build-args: |
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            SECRET=${{ secrets.SECRET }}
+            CLOUD_NAME=${{ secrets.CLOUD_NAME }}
+            CLOUD_API_KEY=${{ secrets.CLOUD_API_KEY }}
+            CLOUD_API_SECRET=${{ secrets.CLOUD_API_SECRET }}
 
-      - name: Build and push items
+      - name: Build and push items service
         uses: docker/build-push-action@v6
         with:
           context: ./backend/items
@@ -52,6 +66,12 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/items:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/items:latest
+          build-args: |
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            SECRET=${{ secrets.SECRET }}
+            CLOUD_NAME=${{ secrets.CLOUD_NAME }}
+            CLOUD_API_KEY=${{ secrets.CLOUD_API_KEY }}
+            CLOUD_API_SECRET=${{ secrets.CLOUD_API_SECRET }}
 
       - name: Build and push client
         uses: docker/build-push-action@v6
@@ -61,60 +81,117 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/client:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKER_USERNAME }}/client:latest
+          build-args: |
+            REACT_APP_SERVER_URL=${secrets.REACT_APP_SERVER_URL}
 
-      - name: Configure AKS Credentials
-        uses: azure/login@v1
-        with: 
-          auth-type: IDENTITY
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          client-secret: ${{ secrets.AZURE_SECRET }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      
+     
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.6.5  
+          terraform_version: 1.6.5
+          terraform_wrapper: false
 
-      
       - name: Terraform Init
         run: terraform init
-        working-directory: terraform/ 
-
-    
-      - name: Terraform Plan
-        run: terraform plan
         working-directory: terraform/
 
-      
+      - name: Import existing resources
+        env:
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          echo "Using subscription ID: $TF_VAR_subscription_id"
+          terraform import azurerm_resource_group.aks_rg "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/bud-restauranty-rg" || echo "Import may have failed (resource may already exist)"
+          terraform import azurerm_kubernetes_cluster.aks "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/bud-restauranty-rg/providers/Microsoft.ContainerService/managedClusters/bud-restauranty-cluster" || echo "Import may have failed (resource may already exist)"
+          terraform import azurerm_public_ip.ingress_ip "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/bud-restauranty-rg/providers/Microsoft.Network/publicIPAddresses/ingress-public-ip" || echo "Import may have failed (resource may already exist)"
+        working-directory: terraform/
+
       - name: Terraform Apply
-        run: terraform apply -auto-approve
+        env:
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          echo "Using subscription ID: $TF_VAR_subscription_id"
+          terraform apply -auto-approve
         working-directory: terraform/
 
-      - name: Get Terraform Outputs
-        id: tf_outputs
+      - name: Extract Terraform outputs
         run: |
-          echo "AKS_RG=$(terraform -chdir=terraform output -raw aks_resource_group)" >> $GITHUB_ENV
-          echo "AKS_CLUSTER=$(terraform -chdir=terraform output -raw aks_cluster_name)" >> $GITHUB_ENV
+          # Change to terraform directory
+          cd terraform || { echo "::error::terraform directory not found"; exit 1; }
+          
+          # Get outputs using direct file writing
+          terraform output -raw aks_resource_group > aks_rg.txt
+          terraform output -raw aks_cluster_name > aks_cluster.txt
+          
+          # Read values from files
+          AKS_RG=$(cat aks_rg.txt)
+          AKS_CLUSTER=$(cat aks_cluster.txt)
+          
+          # Clean values (remove any debug lines)
+          AKS_RG=$(echo "$AKS_RG" | head -n 1 | tr -d '\n')
+          AKS_CLUSTER=$(echo "$AKS_CLUSTER" | head -n 1 | tr -d '\n')
+          
+          # Verify outputs
+          if [ -z "$AKS_RG" ] || [ -z "$AKS_CLUSTER" ]; then
+            echo "::error::Failed to get Terraform outputs"
+            echo "Debug output:"
+            cat aks_rg.txt
+            cat aks_cluster.txt
+            exit 1
+          fi
+          
+          # Set environment variables
+          echo "AKS_RG=$AKS_RG" >> $GITHUB_ENV
+          echo "AKS_CLUSTER=$AKS_CLUSTER" >> $GITHUB_ENV
+       
+      - name: Configure AKS credentials
+        run: |
+          # Clean only Kubernetes config (preserve Azure auth)
+          rm -f ~/.kube/config
+          mkdir -p ~/.kube
 
-      - name: Set AKS Credentials
-        run: |
+          # Get credentials with admin access (recommended for CI/CD)
           az aks get-credentials \
-            --resource-group $AKS_RG \
-            --name $AKS_CLUSTER \
-            --admin \ 
+            --resource-group "$AKS_RG" \
+            --name "$AKS_CLUSTER" \
+            --admin \
+            --overwrite-existing
 
-      - name: Install kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
+          # Verify context and connectivity
+          echo "Current context:"
+          kubectl config current-context
+          
+          echo "Cluster info:"
+          kubectl cluster-info || { echo "::error::Cluster connection failed"; exit 1; }
+          
+          echo "Nodes:"
+          kubectl get nodes -o wide || { echo "::error::Failed to get nodes"; exit 1; }
 
-      - name: Install Helm
+      - name: Setup Kubernetes Tools
         run: |
+          # Install kubectl
+          sudo apt-get update && sudo apt-get install -y kubectl
+          
+          # Install Helm
           curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       
-      - name: Create Kubernetes Secret
+      - name: Install Nginx Ingress Controller
+        run: |
+          # Add the ingress-nginx Helm repo
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo update
+
+          # Install ingress-nginx
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace ingress-nginx \
+            --create-namespace \
+            --set controller.service.type=LoadBalancer \
+
+      - name: Create Kubernetes Secrets
         run: |
           kubectl create secret generic db-credentials \
             --from-literal=MONGODB_URI=${{ secrets.MONGODB_URI }} \
@@ -122,15 +199,35 @@ jobs:
             --from-literal=CLOUD_API_KEY=${{ secrets.CLOUD_API_KEY }} \
             --from-literal=CLOUD_API_SECRET=${{ secrets.CLOUD_API_SECRET }} \
             --from-literal=SECRET=${{ secrets.SECRET }} \
+            --from-literal=REACT_APP_SERVER_URL=${{ secrets.REACT_APP_SERVER_URL }} \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Deploy to AKS
+      - name: Deploy Applications
         run: |
+          # Apply Kubernetes manifests
           kubectl apply -f k8s/
-
-      - name: Restart Deployments to Pull Latest Image 
+          
+      - name: Rollout Restart Deployments
         run: |
-          kubectl rollout restart deployment/auth-deployment -n default
-          kubectl rollout restart deployment/discounts-deployment -n default
-          kubectl rollout restart deployment/items-deployment -n default
-          kubectl rollout restart deployment/client-deployment -n default
+          deployments=(
+            "auth-deployment"
+            "discounts-deployment" 
+            "items-deployment"
+            "client-deployment"
+          )
+
+          for deployment in "${deployments[@]}"; do
+            echo "Restarting $deployment..."
+            kubectl rollout restart deployment/$deployment
+            
+            # Wait with timeout (adjust as needed)
+            if ! kubectl rollout status deployment/$deployment --timeout=90s; then
+              echo "::warning::Rollout for $deployment timed out - forcing cleanup"
+              kubectl delete pods --field-selector=status.phase!=Running --force --grace-period=0
+            fi
+          done
+          
+          # Verify deployments
+          kubectl get pods --watch
+          kubectl get services --watch
+          kubectl get ingress --watch
