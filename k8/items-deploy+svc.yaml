@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,28 +7,54 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: restaurant_items
+      app: restaurant-items
   template:
     metadata:
       labels:
-        app: restaurant_items
+        app: restaurant-items
     spec:
       containers:
-        - name: restaurant_items
-          image: ugougo05/items:latest
-          ports:
-            - containerPort: 3003
-          env:
-            - name: SECRET
-              value: "${{ secrets.SECRET }}"
-            - name: MONGODB_URI
-              value: "${{ secrets.MONGODB_URI }}"
-            - name: CLOUD_NAME
-              value: "${{ secrets.CLOUD_NAME }}"
-            - name: CLOUD_API_KEY
-              value: "${{ secrets.CLOUD_API_KEY }}"
-            - name: CLOUD_API_SECRET
-              value: "${{ secrets.CLOUD_API_SECRET }}"
+      - name: restaurant-items
+        image: ugougo05/items:latest
+        ports:
+        - containerPort: 3003
+        env:
+        # Database Configuration
+        - name: MONGODB_URI_ITEMS
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MONGODB_URI_ITEMS
+        - name: DB_HOST
+          value: "mongo-service"
+        - name: DB_PORT
+          value: "27017"
+        
+        # Application Secrets
+        - name: SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: SECRET
+        
+        # Cloudinary Configuration
+        - name: CLOUD_NAME
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: CLOUD_NAME
+        - name: CLOUD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: CLOUD_API_KEY
+        - name: CLOUD_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: CLOUD_API_SECRET
+
+         
 ---
 apiVersion: v1
 kind: Service
@@ -35,7 +62,7 @@ metadata:
   name: items-service
 spec:
   selector:
-    app: restaurant_items
+    app: restaurant-items
   ports:
     - port: 3003
       targetPort: 3003

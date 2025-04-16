@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,28 +7,18 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: restaurant_client
+      app: restaurant-client
   template:
     metadata:
       labels:
-        app: restaurant_client
+        app: restaurant-client
     spec:
       containers:
-        - name: restaurant_client
-          image: ugougo05/client:latest
-          ports:
-            - containerPort: 3000
-          env:
-            - name: SECRET
-              value: "${{ secrets.SECRET }}"
-            - name: MONGODB_URI
-              value: "${{ secrets.MONGODB_URI }}"
-            - name: CLOUD_NAME
-              value: "${{ secrets.CLOUD_NAME }}"
-            - name: CLOUD_API_KEY
-              value: "${{ secrets.CLOUD_API_KEY }}"
-            - name: CLOUD_API_SECRET
-              value: "${{ secrets.CLOUD_API_SECRET }}"
+      - name: restaurant-client
+        image: ugougo05/client:latest
+        ports:
+          - containerPort: 3000
+        
 ---
 apiVersion: v1
 kind: Service
@@ -35,7 +26,7 @@ metadata:
   name: client-service
 spec:
   selector:
-    app: restaurant_client
+    app: restaurant-client
   ports:
     - port: 3000
       targetPort: 3000
