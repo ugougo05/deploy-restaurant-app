@@ -214,7 +214,7 @@ jobs:
       - name: Deploy Applications
         run: |
           # Apply Kubernetes manifests
-          kubectl apply -f k8s/
+          kubectl apply -f k8/
           kubectl apply -f rollout-restart-deployments/
           
           
