@@ -32,12 +32,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
 }
 
 resource "azurerm_public_ip" "ingress_ip" {
-  name                = "ugo_ingress_public-ip"
+  name                = "ugo-ingress-public-ip"
   location            = azurerm_resource_group.aks_rg.location
   resource_group_name = azurerm_resource_group.aks_rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  domain_name_label   = "ugo_restauranty_app"
+  domain_name_label   = "ugo-restauranty-app"
 }
 
 output "ingress_public_ip" {

@@ -1,7 +1,7 @@
 variable "resource_group_name" {
   type        = string
   description = "The name of the resource group"
-  default     = "ugo_restauranty_rg"
+  default     = "ugo-restauranty-rg"
 }
 
 variable "location" {
@@ -13,7 +13,7 @@ variable "location" {
 variable "aks_cluster_name" {
   type        = string
   description = "AKS Cluster name"
-  default     = "ugo_restauranty_cluster"
+  default     = "ugo-restauranty-cluster"
 }
 
 variable "agent_count" {
