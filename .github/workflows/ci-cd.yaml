@@ -105,9 +105,9 @@ jobs:
           TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           echo "Using subscription ID: $TF_VAR_subscription_id"
-          terraform import azurerm_resource_group.aks_rg "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/ugo-restauranty-rg" || echo "Import may have failed (resource may already exist)"
-          terraform import azurerm_kubernetes_cluster.aks "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/ugo-restauranty-cluster/providers/Microsoft.ContainerService/managedClusters/ugo-restauranty-cluster" || echo "Import may have failed (resource may already exist)"
-          terraform import azurerm_public_ip.ingress_ip "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/ugo-restauranty-rg/providers/Microsoft.Network/publicIPAddresses/ugo-ingress-public-ip" || echo "Import may have failed (resource may already exist)"
+          terraform import azurerm_resource_group.aks_rg "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/ugo_restauranty_rg" || echo "Import may have failed (resource may already exist)"
+          terraform import azurerm_kubernetes_cluster.aks "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/ugo_restauranty_cluster/providers/Microsoft.ContainerService/managedClusters/ugo-restauranty-cluster" || echo "Import may have failed (resource may already exist)"
+          terraform import azurerm_public_ip.ingress_ip "/subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/ugo_restauranty_rg/providers/Microsoft.Network/publicIPAddresses/ugo-ingress-public-ip" || echo "Import may have failed (resource may already exist)"
         working-directory: terraform/
 
       - name: Terraform Apply
