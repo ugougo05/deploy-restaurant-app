@@ -25,7 +25,7 @@ spec:
               name: app-secrets
               key: MONGODB_URI
         - name: DB_HOST
-          value: "mongo-service"
+          value: "mongodb-service"
         - name: DB_PORT
           value: "27017"
 ---
