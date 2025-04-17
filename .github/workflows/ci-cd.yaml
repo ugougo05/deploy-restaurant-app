@@ -215,10 +215,10 @@ jobs:
         run: |
           # Apply Kubernetes manifests
           kubectl apply -f k8/
-          kubectl apply -f rollout-restart-deployments/
+        
           
           
           # Verify deployments
-          kubectl get pods --watch
-          kubectl get services --watch
-          kubectl get ingress --watch
+          kubectl get pods
+          kubectl get services
+          kubectl get ingress
